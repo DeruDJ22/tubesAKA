@@ -9,10 +9,10 @@ if (!$connect) {
 
 // Variabel untuk menyimpan hasil pencarian dan data waktu
 $resultsIterative = []; // Hasil pencarian dengan metode iteratif
-$resultsRecursive = []; // Hasil pencarian dengan metode rekursif
+$resultsFiltering = []; // Hasil pencarian dengan metode rekursif
 $searchScore = ''; // Nilai skor yang dicari
 $timeIterative = []; // Waktu eksekusi metode iteratif
-$timeRecursive = []; // Waktu eksekusi metode rekursif
+$timeFiltering = []; // Waktu eksekusi metode rekursif
 
 // Fungsi pencarian iteratif
 function searchIterative($data, $score) {
@@ -31,16 +31,16 @@ function searchIterative($data, $score) {
     return $found; // Kembalikan hasil pencarian
 }
 
-// Fungsi pencarian rekursif
-function searchRecursive($data, $score, $index = 0, $found = [], $startTime = null) {
-    global $timeRecursive; // Gunakan variabel global untuk menyimpan waktu
+// Fungsi filtering rekursif
+function searchFiltering($data, $score, $index = 0, $found = [], $startTime = null) {
+    global $timeFiltering; // Gunakan variabel global untuk menyimpan waktu
 
     // Mulai catat waktu jika ini adalah iterasi pertama
     if ($startTime === null) {
         $startTime = microtime(true);
     }
 
-    $timeRecursive[] = microtime(true) - $startTime; // Catat waktu saat ini
+    $timeFiltering[] = microtime(true) - $startTime; // Catat waktu saat ini
 
     // Jika sudah mencapai akhir data, kembalikan hasil
     if ($index >= count($data)) {
@@ -53,7 +53,7 @@ function searchRecursive($data, $score, $index = 0, $found = [], $startTime = nu
     }
 
     // Lanjutkan ke data berikutnya
-    return searchRecursive($data, $score, $index + 1, $found, $startTime);
+    return searchFiltering($data, $score, $index + 1, $found, $startTime);
 }
 
 // Jika form pencarian dikirim
@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $resultsIterative = searchIterative($animeData, $searchScore);
 
         // Gunakan metode rekursif untuk pencarian
-        $resultsRecursive = searchRecursive($animeData, $searchScore);
+        $resultsFiltering = searchFiltering($animeData, $searchScore);
     }
 }
 
@@ -139,7 +139,7 @@ mysqli_close($connect);
             <?php endif; ?>
 
             <h3>Hasil Pencarian (Rekursif):</h3>
-            <?php if (!empty($resultsRecursive)): ?>
+            <?php if (!empty($resultsFiltering)): ?>
                 <table class="table table-bordered">
                     <thead>
                         <tr>
@@ -152,7 +152,7 @@ mysqli_close($connect);
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($resultsRecursive as $row): ?>
+                        <?php foreach ($resultsFiltering as $row): ?>
                             <tr>
                                 <td><?= htmlspecialchars($row['MAL_ID']) ?></td>
                                 <td><?= htmlspecialchars($row['Name']) ?></td>
@@ -174,32 +174,32 @@ mysqli_close($connect);
 
             <script>
                 var timeIterative = <?= json_encode($timeIterative) ?>;
-                var timeRecursive = <?= json_encode($timeRecursive) ?>;
+                var timeFiltering = <?= json_encode($timeFiltering) ?>;
 
                 // Tentukan jumlah hasil pencarian
                 var resultsIterativeCount = <?= count($resultsIterative) ?>;
-                var resultsRecursiveCount = <?= count($resultsRecursive) ?>;
+                var resultsFilteringCount = <?= count($resultsFiltering) ?>;
 
                 // Sumbu X disesuaikan dengan jumlah hasil pencarian
                 var searchAttemptsIterative = Array.from({
                     length: resultsIterativeCount
                 }, (_, i) => i + 1);
-                var searchAttemptsRecursive = Array.from({
-                    length: resultsRecursiveCount
+                var searchAttemptsFiltering = Array.from({
+                    length: resultsFilteringCount
                 }, (_, i) => i + 1);
 
                 // Pangkas waktu agar sesuai dengan hasil pencarian
                 var timeIterativeTrimmed = timeIterative.slice(0, resultsIterativeCount);
-                var timeRecursiveTrimmed = timeRecursive.slice(0, resultsRecursiveCount);
+                var timeFilteringTrimmed = timeFiltering.slice(0, resultsFilteringCount);
 
-                if (timeIterativeTrimmed.length > 0 || timeRecursiveTrimmed.length > 0) {
+                if (timeIterativeTrimmed.length > 0 || timeFilteringTrimmed.length > 0) {
                     var ctx = document.getElementById('timeChart').getContext('2d');
                     var timeChart = new Chart(ctx, {
                         type: 'line',
                         data: {
-                            labels: searchAttemptsIterative.length > searchAttemptsRecursive.length ?
+                            labels: searchAttemptsIterative.length > searchAttemptsFiltering.length ?
                                 searchAttemptsIterative :
-                                searchAttemptsRecursive, // Label berdasarkan hasil pencarian
+                                searchAttemptsFiltering, // Label berdasarkan hasil pencarian
                             datasets: [{
                                     label: 'Iterative Search',
                                     data: timeIterativeTrimmed,
@@ -209,8 +209,8 @@ mysqli_close($connect);
                                     tension: 0.3
                                 },
                                 {
-                                    label: 'Recursive Search',
-                                    data: timeRecursiveTrimmed,
+                                    label: 'Filtering Search',
+                                    data: timeFilteringTrimmed,
                                     borderColor: 'red',
                                     backgroundColor: 'rgba(255, 0, 0, 0.1)',
                                     fill: false,
